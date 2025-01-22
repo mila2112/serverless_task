@@ -1,0 +1,143 @@
+service: stack1
+app: stack1
+
+useDotenv: true
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-east-1
+  stage: dev
+  environment:
+    USER_POOL_ID: !ImportValue UserPoolId-dev
+    CLIENT_ID: !ImportValue UserClientId-dev
+    API_GATEWAY_ID: !ImportValue ApiGatewayId-dev
+    COGNITO_USER_POOL_ARN: !ImportValue CognitoUserPoolArn-dev
+    LOAD_BALANCER_QUEUE_ARN: !GetAtt LoadBalancerQueue.Arn
+    LOAD_BALANCER_QUEUE_URL: !GetAtt LoadBalancerQueue.QueueUrl
+    API_GATEWAY_ROOT_RESOURCE_ID: !ImportValue ApiGatewayRootResourceId-dev
+    MESSAGES_TABLE: !Ref MessagesTable
+    ADDRESSES_TABLE: !Ref AddressesTable
+    CSV_BUCKET: csv-bucket-${self:provider.stage}-default
+    CSV_UPLOADS_TABLE: !Ref CsvUploadsTable
+    NODE_ENV: ${env:NODE_ENV}
+  apiGateway:
+    restApiId: ${self:provider.environment.API_GATEWAY_ID}
+    restApiRootResourceId: ${self:provider.environment.API_GATEWAY_ROOT_RESOURCE_ID}
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - sqs:SendMessage
+        - sqs:ReceiveMessage
+        - sqs:GetQueueAttributes
+        - sqs:DeleteMessage
+      Resource:
+        - !GetAtt LoadBalancerQueue.Arn
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+        - dynamodb:GetItem
+        - dynamodb:Query
+        - dynamodb:Scan
+      Resource:
+        - !GetAtt MessagesTable.Arn
+        - !Sub "${MessagesTable.Arn}/index/UserEmailIndex"
+        - !GetAtt AddressesTable.Arn
+        - !GetAtt CsvUploadsTable.Arn
+    - Effect: Allow
+      Action:
+        - s3:PutObject
+        - s3:GetObject
+      Resource:
+        - "arn:aws:s3:::csv-bucket-${self:provider.stage}-default"
+        - "arn:aws:s3:::csv-bucket-${self:provider.stage}-default/*"
+
+plugins:
+  - serverless-offline
+  - serverless-dotenv-plugin
+  - serverless-apigateway-service-proxy
+  - serverless-esbuild
+
+custom:
+  dotenv:
+    path: .env
+  serverless-offline:
+    httpPort: 3000
+  apiGatewayServiceProxies:
+    - sqs:
+        queueName: LoadBalancerQueue-${self:provider.stage}
+        path: /loadBalancer
+        method: post
+  esbuild:
+    sourcemap: true
+
+package:
+  excludeDevDependencies: true
+  include:
+    - node_modules/@prisma/client/**
+    - node_modules/.prisma/**
+
+functions:
+  loadBalancer:
+    handler: src/v1/lambdas/loadBalancerHandler.handler
+    events:
+      - sqs:
+          arn: !GetAtt LoadBalancerQueue.Arn
+          batchSize: 5
+
+  streamProcessor:
+    handler: src/v1/lambdas/streamProcessor.handler
+    events:
+      - stream:
+          type: dynamodb
+          arn:
+            Fn::GetAtt: [ MessagesTable, StreamArn ]
+          batchSize: 5
+
+  getByPassportId:
+    handler: src/v1/lambdas/getByPassportId.handler
+    events:
+      - http:
+          path: messages/passportId/{passportId}
+          method: get
+
+  getByUserEmail:
+    handler: src/v1/lambdas/getByUserEmail.handler
+    events:
+      - http:
+          path: messages/userEmail
+          method: get
+          request:
+            parameters:
+              querystrings:
+                userEmail: true
+
+  scanMessages:
+    handler: src/v1/lambdas/scanMessages.handler
+    events:
+      - http:
+          path: messages/scan
+          method: get
+          cors: true
+
+  getSignedUrl:
+    handler: src/v1/lambdas/getSignedUrlHandler.handler
+    events:
+      - http:
+          path: s3/signed-url
+          method: post
+          cors: true
+
+  processCsvUpload:
+    handler: src/v1/lambdas/processCsvUpload.handler
+    events:
+      - s3:
+          bucket: ${self:provider.environment.CSV_BUCKET}
+          event: s3:ObjectCreated:*
+          rules:
+            - suffix: .csv
+          existing: true
+
+resources:
+  - ${file(resources.yml)}

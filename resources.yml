@@ -1,0 +1,109 @@
+Resources:
+  LoadBalancerQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: LoadBalancerQueue-${self:provider.stage}
+      RedrivePolicy:
+        deadLetterTargetArn:
+          Fn::GetAtt: [ LoadBalancerDLQ, Arn ]
+        maxReceiveCount: 3
+
+  LoadBalancerDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: LoadBalancerDLQ-${self:provider.stage}
+
+  MessagesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Messages-${self:provider.stage}
+      AttributeDefinitions:
+        - AttributeName: passportId
+          AttributeType: S
+        - AttributeName: zip
+          AttributeType: S
+        - AttributeName: userEmail
+          AttributeType: S
+      KeySchema:
+        - AttributeName: passportId
+          KeyType: HASH
+        - AttributeName: zip
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: UserEmailIndex
+          KeySchema:
+            - AttributeName: userEmail
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      BillingMode: PAY_PER_REQUEST
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+
+  AddressesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Addresses-${self:provider.stage}
+      AttributeDefinitions:
+        - AttributeName: addressId
+          AttributeType: S
+        - AttributeName: passportId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: addressId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: PassportIndex
+          KeySchema:
+            - AttributeName: passportId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      BillingMode: PAY_PER_REQUEST
+
+  CsvBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+        BucketName: csv-bucket-${self:provider.stage}-default
+        CorsConfiguration:
+          CorsRules:
+            - AllowedOrigins:
+                - "*"
+              AllowedMethods:
+                - GET
+                - PUT
+                - POST
+              AllowedHeaders:
+                - "*"
+
+  CsvUploadsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: csv-uploads-${self:provider.stage}
+      AttributeDefinitions:
+        - AttributeName: uuid
+          AttributeType: S
+      KeySchema:
+        - AttributeName: uuid
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+Outputs:
+  LoadBalancerQueueArn:
+    Description: "The ARN of the SQS Queue"
+    Value: !GetAtt LoadBalancerQueue.Arn
+    Export:
+      Name: LoadBalancerQueueArn-${self:provider.stage}
+
+  LoadBalancerQueueUrl:
+    Description: "The URL of the SQS Queue"
+    Value: !GetAtt LoadBalancerQueue.QueueUrl
+    Export:
+      Name: LoadBalancerQueueUrl-${self:provider.stage}
+
+  MessagesTableName:
+    Description: "The name of the DynamoDB Messages table"
+    Value: !Ref MessagesTable
+    Export:
+      Name: MessagesTableName-${self:provider.stage}
+
+

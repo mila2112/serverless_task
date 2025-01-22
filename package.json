@@ -1,0 +1,42 @@
+{
+  "name": "main_service",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.716.0",
+    "@aws-sdk/client-dynamodb": "^3.730.0",
+    "@aws-sdk/client-rds-data": "^3.721.0",
+    "@aws-sdk/client-s3": "3.726.1",
+    "@aws-sdk/client-sqs": "^3.716.0",
+    "@aws-sdk/lib-dynamodb": "^3.730.0",
+    "@aws-sdk/s3-request-presigner": "^3.731.1",
+    "@prisma/client": "^6.2.0",
+    "@types/aws-lambda": "^8.10.146",
+    "aws-lambda": "^1.0.7",
+    "csv-parse": "^5.6.0",
+    "csv-parser": "^3.1.0",
+    "dotenv": "^16.4.7",
+    "multer": "^1.4.5-lts.1",
+    "pino": "^9.6.0",
+    "prisma": "^6.2.0",
+    "serverless-apigateway-service-proxy": "^2.2.1",
+    "serverless-esbuild": "^1.54.6",
+    "uuid": "^11.0.5"
+  },
+  "devDependencies": {
+    "@types/csv-parse": "^1.1.12",
+    "@types/node": "^22.10.2",
+    "esbuild": "^0.24.2",
+    "serverless": "^3.0.0",
+    "serverless-dotenv-plugin": "^6.0.0",
+    "serverless-offline": "^10.0.0",
+    "serverless-plugin-typescript": "^2.1.5",
+    "serverless-ssm-fetch": "^2.0.0"
+  }
+}
