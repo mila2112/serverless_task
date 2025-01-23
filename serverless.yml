@@ -20,7 +20,7 @@ provider:
     ADDRESSES_TABLE: !Ref AddressesTable
     CSV_BUCKET: csv-bucket-${self:provider.stage}-default
     CSV_UPLOADS_TABLE: !Ref CsvUploadsTable
-    NODE_ENV: ${env:NODE_ENV}
+    NODE_ENV: ${self:provider.stage}
   apiGateway:
     restApiId: ${self:provider.environment.API_GATEWAY_ID}
     restApiRootResourceId: ${self:provider.environment.API_GATEWAY_ROOT_RESOURCE_ID}
