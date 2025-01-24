@@ -9,13 +9,13 @@ provider:
   region: us-east-1
   stage: ${opt:stage, 'dev'}
   environment:
-    USER_POOL_ID: !ImportValue UserPoolId-dev
-    CLIENT_ID: !ImportValue UserClientId-dev
-    API_GATEWAY_ID: !ImportValue ApiGatewayId-dev
-    COGNITO_USER_POOL_ARN: !ImportValue CognitoUserPoolArn-dev
+    USER_POOL_ID: !ImportValue UserPoolId-${self:provider.stage}
+    CLIENT_ID: !ImportValue UserClientId-${self:provider.stage}
+    API_GATEWAY_ID: !ImportValue ApiGatewayId-${self:provider.stage}
+    COGNITO_USER_POOL_ARN: !ImportValue CognitoUserPoolArn-${self:provider.stage}
     LOAD_BALANCER_QUEUE_ARN: !GetAtt LoadBalancerQueue.Arn
     LOAD_BALANCER_QUEUE_URL: !GetAtt LoadBalancerQueue.QueueUrl
-    API_GATEWAY_ROOT_RESOURCE_ID: !ImportValue ApiGatewayRootResourceId-dev
+    API_GATEWAY_ROOT_RESOURCE_ID: !ImportValue ApiGatewayRootResourceId-${self:provider.stage}
     MESSAGES_TABLE: !Ref MessagesTable
     ADDRESSES_TABLE: !Ref AddressesTable
     CSV_BUCKET: csv-bucket-${self:provider.stage}-default
