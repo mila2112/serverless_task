@@ -12,8 +12,8 @@ phases:
       - npm install
   build:
     commands:
-      - echo "Deploying to production environment..."
-      - serverless deploy --stage prod
+      - echo "Deploying to ${STAGE} environment..."
+      - serverless deploy --stage ${STAGE}
 artifacts:
   files:
     - "**/*"
